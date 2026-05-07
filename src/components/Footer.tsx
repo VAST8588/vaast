@@ -43,7 +43,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10 py-4 text-center">
-        <p className="text-gray-600 text-xs">© 2024 VAST. {tx.rights}.</p>
+        <p className="text-gray-600 text-xs">© 2026 VAST. {tx.rights}.</p>
       </div>
     </footer>
   );
