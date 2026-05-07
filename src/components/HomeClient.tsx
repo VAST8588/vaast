@@ -27,7 +27,7 @@ export default function HomeClient({ products }: { products: Product[] }) {
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="/banner.jpg"
+            src="/banner.png"
             alt="VAST Banner"
             fill
             className="object-cover opacity-60"
