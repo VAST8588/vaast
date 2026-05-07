@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Нэвтэрнэ үү" }, { status: 401 });
+
+  const orders = await db.order.findMany({
+    where: { userId: (session.user as any).id },
+    include: { items: { include: { product: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(orders);
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Нэвтэрнэ үү" }, { status: 401 });
+
+  try {
+    const { items, paymentMethod, note, totalAmount } = await req.json();
+
+    const order = await db.order.create({
+      data: {
+        userId: (session.user as any).id,
+        paymentMethod,
+        totalAmount,
+        note,
+        items: {
+          create: items.map((item: any) => ({
+            productId: item.productId,
+            size: item.size,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    return NextResponse.json({ success: true, orderId: order.id });
+  } catch {
+    return NextResponse.json({ error: "Захиалга хийхэд алдаа гарлаа" }, { status: 500 });
+  }
+}
