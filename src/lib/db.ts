@@ -3,8 +3,17 @@ import { PrismaClient } from "@/generated/prisma/client";
 import path from "path";
 
 function createDb() {
-  const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
-  const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+  const isProd = process.env.NODE_ENV === "production" || process.env.TURSO_DATABASE_URL;
+
+  const adapter = isProd
+    ? new PrismaLibSql({
+        url: process.env.TURSO_DATABASE_URL!,
+        authToken: process.env.TURSO_AUTH_TOKEN!,
+      })
+    : new PrismaLibSql({
+        url: `file:${path.resolve(process.cwd(), "prisma", "dev.db")}`,
+      });
+
   return new PrismaClient({ adapter });
 }
 
