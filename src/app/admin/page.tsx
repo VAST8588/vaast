@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { t } from "@/lib/translations";
-import { Users, ShoppingBag, TrendingUp, Clock, Plus, Trash2, Save } from "lucide-react";
+import { Users, ShoppingBag, TrendingUp, Clock, Plus, Trash2, Save, BarChart2 } from "lucide-react";
 
 const ORDER_STATUSES = ["pending", "confirmed", "delivered", "cancelled"];
 const PAYMENT_STATUSES = ["unpaid", "paid"];
@@ -16,7 +16,7 @@ export default function AdminPage() {
   const tx = t[lang];
   const router = useRouter();
 
-  const [tab, setTab] = useState<"orders" | "users" | "products">("orders");
+  const [tab, setTab] = useState<"orders" | "users" | "products" | "stats">("orders");
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -141,7 +141,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-white/10">
-        {(["orders", "users", "products"] as const).map((tb) => (
+        {(["orders", "users", "products", "stats"] as const).map((tb) => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
@@ -149,7 +149,7 @@ export default function AdminPage() {
               tab === tb ? "border-white text-white" : "border-transparent text-gray-500 hover:text-white"
             }`}
           >
-            {tb === "orders" ? tx.orders : tb === "users" ? tx.users : lang === "mn" ? "Бараа" : "Products"}
+            {tb === "orders" ? tx.orders : tb === "users" ? tx.users : tb === "products" ? (lang === "mn" ? "Бараа" : "Products") : (lang === "mn" ? "Статистик" : "Stats")}
           </button>
         ))}
       </div>
@@ -388,6 +388,112 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* ===== STATS TAB ===== */}
+      {tab === "stats" && (() => {
+        // Өдрөөр бүлэглэх
+        const byDay: Record<string, number> = {};
+        const byMonth: Record<string, number> = {};
+        const byProduct: Record<string, { name: string; qty: number; revenue: number }> = {};
+
+        orders.forEach((o) => {
+          const date = new Date(o.createdAt);
+          const day = date.toLocaleDateString("mn-MN");
+          const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          byDay[day] = (byDay[day] || 0) + o.totalAmount;
+          byMonth[month] = (byMonth[month] || 0) + o.totalAmount;
+          o.items?.forEach((item: any) => {
+            if (!byProduct[item.productId]) byProduct[item.productId] = { name: item.product?.nameMn || item.productId, qty: 0, revenue: 0 };
+            byProduct[item.productId].qty += item.quantity;
+            byProduct[item.productId].revenue += item.price * item.quantity;
+          });
+        });
+
+        const days = Object.entries(byDay).slice(-14).reverse();
+        const months = Object.entries(byMonth).reverse();
+        const topProducts = Object.values(byProduct).sort((a, b) => b.revenue - a.revenue);
+        const maxDay = Math.max(...days.map(([, v]) => v), 1);
+        const maxMonth = Math.max(...months.map(([, v]) => v), 1);
+
+        return (
+          <div className="flex flex-col gap-8">
+            {/* Сарын борлуулалт */}
+            <div className="bg-zinc-900 border border-white/5 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <BarChart2 size={16} className="text-green-400" />
+                <h2 className="text-white font-bold tracking-wider text-sm">{lang === "mn" ? "Сарын борлуулалт" : "Monthly Revenue"}</h2>
+              </div>
+              {months.length === 0 ? (
+                <p className="text-gray-500 text-sm">{lang === "mn" ? "Мэдээлэл байхгүй" : "No data"}</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {months.map(([month, amount]) => (
+                    <div key={month} className="flex items-center gap-3">
+                      <span className="text-gray-500 text-xs w-20 shrink-0">{month}</span>
+                      <div className="flex-1 bg-zinc-800 h-6 relative">
+                        <div
+                          className="h-full bg-green-500/70 transition-all"
+                          style={{ width: `${(amount / maxMonth) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-white text-xs font-bold w-28 text-right shrink-0">₮{amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Өдрийн борлуулалт (сүүлийн 14 өдөр) */}
+            <div className="bg-zinc-900 border border-white/5 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp size={16} className="text-blue-400" />
+                <h2 className="text-white font-bold tracking-wider text-sm">{lang === "mn" ? "Өдрийн борлуулалт (сүүлийн 14 өдөр)" : "Daily Revenue (last 14 days)"}</h2>
+              </div>
+              {days.length === 0 ? (
+                <p className="text-gray-500 text-sm">{lang === "mn" ? "Мэдээлэл байхгүй" : "No data"}</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {days.map(([day, amount]) => (
+                    <div key={day} className="flex items-center gap-3">
+                      <span className="text-gray-500 text-xs w-24 shrink-0">{day}</span>
+                      <div className="flex-1 bg-zinc-800 h-6 relative">
+                        <div
+                          className="h-full bg-blue-500/70 transition-all"
+                          style={{ width: `${(amount / maxDay) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-white text-xs font-bold w-28 text-right shrink-0">₮{amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Хамгийн их борлуулагдсан бараа */}
+            <div className="bg-zinc-900 border border-white/5 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <ShoppingBag size={16} className="text-yellow-400" />
+                <h2 className="text-white font-bold tracking-wider text-sm">{lang === "mn" ? "Бараагаар борлуулалт" : "Revenue by Product"}</h2>
+              </div>
+              {topProducts.length === 0 ? (
+                <p className="text-gray-500 text-sm">{lang === "mn" ? "Мэдээлэл байхгүй" : "No data"}</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {topProducts.map((p) => (
+                    <div key={p.name} className="flex items-center justify-between gap-4 py-3 border-b border-white/5">
+                      <p className="text-white text-sm font-semibold">{p.name}</p>
+                      <div className="flex gap-6 text-xs text-right">
+                        <span className="text-gray-400">{lang === "mn" ? "Тоо:" : "Qty:"} <span className="text-white font-bold">{p.qty}</span></span>
+                        <span className="text-gray-400">{lang === "mn" ? "Орлого:" : "Revenue:"} <span className="text-green-400 font-bold">₮{p.revenue.toLocaleString()}</span></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
