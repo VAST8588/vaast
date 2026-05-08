@@ -21,6 +21,9 @@ export async function GET() {
         )
       `);
       await db.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email")`);
+      // resetToken columns нэмэх (байхгүй бол)
+      try { await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "resetToken" TEXT`); } catch {}
+      try { await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "resetTokenExpiry" DATETIME`); } catch {}
       await db.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS "Product" (
           "id" TEXT NOT NULL PRIMARY KEY,
