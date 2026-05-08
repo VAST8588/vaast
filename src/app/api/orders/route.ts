@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendOrderConfirmation } from "@/lib/email";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -38,8 +39,25 @@ export async function POST(req: NextRequest) {
           })),
         },
       },
-      include: { items: true },
+      include: { items: { include: { product: true } } },
     });
+
+    // Имэйл илгээх (алдаа гарсан ч захиалга амжилттай гэж үзнэ)
+    try {
+      await sendOrderConfirmation({
+        to: session.user.email!,
+        userName: session.user.name!,
+        orderId: order.id,
+        items: order.items.map((item: any) => ({
+          name: item.product.nameMn,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        totalAmount,
+        paymentMethod,
+      });
+    } catch {}
 
     return NextResponse.json({ success: true, orderId: order.id });
   } catch {
