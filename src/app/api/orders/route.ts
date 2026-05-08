@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       include: { items: { include: { product: true } } },
     });
 
-    // Имэйл илгээх (алдаа гарсан ч захиалга амжилттай гэж үзнэ)
+    // Имэйл илгээх
     try {
       await sendOrderConfirmation({
         to: session.user.email!,
@@ -56,6 +56,20 @@ export async function POST(req: NextRequest) {
         })),
         totalAmount,
         paymentMethod,
+      });
+    } catch {}
+
+    // Telegram мэдэгдэл
+    try {
+      const orderNum = order.id.slice(-8).toUpperCase();
+      const itemsList = order.items.map((item: any) =>
+        `• ${item.product.nameMn} (${item.size}) x${item.quantity} — ₮${(item.price * item.quantity).toLocaleString()}`
+      ).join("\n");
+      const text = `🛍 Шинэ захиалга!\n\n#${orderNum}\n👤 ${session.user.name} (${session.user.email})\n\n${itemsList}\n\n💰 Нийт: ₮${totalAmount.toLocaleString()}\n💳 ${paymentMethod === "qpay" ? "QPay" : "Банк шилжүүлэг"}`;
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text }),
       });
     } catch {}
 
