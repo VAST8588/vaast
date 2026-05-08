@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -38,38 +37,12 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogle() {
-    setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/" });
-  }
-
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Image src="/logo.png" alt="VAST" width={48} height={48} className="mx-auto mb-4" />
           <h1 className="text-2xl font-black tracking-widest text-white">{tx.loginTitle}</h1>
-        </div>
-
-        {/* Google товч */}
-        <button
-          onClick={handleGoogle}
-          disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 bg-zinc-900 border border-white/10 text-white py-3 text-sm font-medium hover:bg-zinc-800 transition mb-4 disabled:opacity-50"
-        >
-          <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
-            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8H6.3C9.7 35.7 16.3 40 24 40v4z"/>
-            <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C41 35.2 44 30 44 24c0-1.3-.1-2.6-.4-3.9z"/>
-          </svg>
-          {googleLoading ? "..." : (lang === "mn" ? "Google-ээр нэвтрэх" : "Continue with Google")}
-        </button>
-
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-gray-600 text-xs">{lang === "mn" ? "эсвэл" : "or"}</span>
-          <div className="flex-1 h-px bg-white/10" />
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
