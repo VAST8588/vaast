@@ -72,18 +72,25 @@ export async function GET() {
     const adminPassword = process.env.ADMIN_PASSWORD || "Ochko123";
     const hashed = await bcrypt.hash(adminPassword, 10);
 
-    await db.user.deleteMany({ where: { isAdmin: true } });
-    await db.user.create({
-      data: {
-        name: "Admin",
-        email: adminEmail,
-        password: hashed,
-        phone: "99999999",
-        address: "Улаанбаатар",
-        isAdmin: true,
-        isVerified: true,
-      },
-    });
+    const existingAdmin = await db.user.findUnique({ where: { email: adminEmail } });
+    if (existingAdmin) {
+      await db.user.update({
+        where: { email: adminEmail },
+        data: { password: hashed, isAdmin: true, isVerified: true },
+      });
+    } else {
+      await db.user.create({
+        data: {
+          name: "Admin",
+          email: adminEmail,
+          password: hashed,
+          phone: "99999999",
+          address: "Улаанбаатар",
+          isAdmin: true,
+          isVerified: true,
+        },
+      });
+    }
 
     // Бүтээгдэхүүн байхгүй бол үүсгэх
     const count = await db.product.count();
